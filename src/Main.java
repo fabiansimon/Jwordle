@@ -1,6 +1,9 @@
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.lang.reflect.Array;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Main {
 
@@ -10,16 +13,21 @@ public class Main {
     //a smaller list of words for selecting the target word from (i.e. the word the player needs to guess)
     public static ArrayList<String> targetWords = new ArrayList<>();
 
-    // guessWords
-    private static ArrayList<HashMap<Character, Character>> guessedWords = new ArrayList<>();
+    // guess Words
+    private static ArrayList<String> guessedWords = new ArrayList<>();
 
     // Game data
     private static int GAME_LENGTH = 5;
+    private static int WORD_LENGTH = 5;
     private static boolean gameOver = false;
+    private static boolean didWin = false;
+    private static String currentGuess = "";
+    private static String keyboardLetters = "QWERTYUIOP\nASDFGHJKL\nZXCVBNM";
     private static String targetWord;
 
     public static void main(String[] args) {
-        Scanner inputScanner =  new Scanner(System.in);
+
+        //new JWordleGUI(targetWord);
 
         //load in the two word lists
         try{
@@ -40,25 +48,9 @@ public class Main {
             e.printStackTrace();
         }
 
-        targetWord = getTarget().toUpperCase(Locale.ROOT);
-
-        while (guessedWords.size() < GAME_LENGTH && !gameOver) {
-            System.out.println("Please enter your guess");
-            String guess = inputScanner.nextLine();
-
-            checkWord(guess);
-            addGuess(guess);
-
-            printStructure();
+        while (true) {
+            startGame();
         }
-
-        /*
-        guessedWords.add("Hello");
-        guessedWords.add("Friend");
-
-        System.out.println(getTarget());
-        System.out.println(printStructure());*/
-
     }
 
     //use this method for selecting a word. It's important for marking that the word you have selected is printed out to the console!
@@ -70,41 +62,108 @@ public class Main {
         return target;
     }
 
-    private static void checkWord(String guess) {
+    private static void startGame() {
+        Scanner inputScanner =  new Scanner(System.in);
+        targetWord = getTarget().toUpperCase(Locale.ROOT);
+
+        while (guessedWords.size() < GAME_LENGTH && !gameOver) {
+
+            boolean isValid = false;
+
+            while (!isValid) {
+                inputWord();
+                isValid = getIsValid();
+            }
+
+            addGuess(currentGuess);
+            printStructure();
+            checkGameStatus(currentGuess);
+        }
+
+        if (didWin) System.out.println(Colors.GREEN.getColor() + "Congrats you have won in just " + guessedWords.size() + " tries" + Colors.RESET.getColor());
+        if (!didWin) System.out.println(Colors.RED.getColor() + "You have lost, the word you were looking for was " + targetWord + Colors.RESET.getColor());
+
+        System.out.println("Play again? Y/N");
+        String answer = inputScanner.nextLine().toUpperCase(Locale.ROOT).trim();
+
+        if (answer.contains("Y")) {
+            resetGame();
+        } else {
+            System.exit(0);
+        }
+    }
+
+    private static void resetGame() {
+        gameOver = false;
+        didWin = false;
+        guessedWords = new ArrayList<>();
+    }
+
+    private static boolean getIsValid() {
+        Pattern p = Pattern.compile("[^a-z]", Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(currentGuess);
+        boolean reg = m.find();
+        boolean dic = dictionary.contains(currentGuess.toLowerCase(Locale.ROOT));
+
+        if (currentGuess.length() == WORD_LENGTH && !reg && dic) return true;
+
+        System.out.println("Please enter a valid guess");
+        return false;
+    }
+
+    private static void inputWord() {
+        Scanner inputScanner =  new Scanner(System.in);
+        System.out.println("Please enter your guess");
+        currentGuess = inputScanner.nextLine().toUpperCase(Locale.ROOT).trim();
+    }
+
+    private static void checkGameStatus(String guess) {
         if (targetWord.equals(guess)) {
-            System.out.println("CORRECT");
             gameOver = true;
+            didWin = true;
+            return;
+        }
+
+        if (guessedWords.size() == GAME_LENGTH) {
+            gameOver = true;
+            didWin = false;
             return;
         }
     }
 
     private static void addGuess(String guessInput) {
-        String guess = guessInput.toUpperCase(Locale.ROOT).trim();
+        String guess = guessInput;
+        guessedWords.add(guess);
+    }
 
-        for (int i = 0; i < targetWord.length(); i++) {
-            Character gL = guess.charAt(i);
-            Character tL = targetWord.charAt(i);
-
-            HashMap<Character, Character> word = new HashMap<>();
-            if (tL == gL) System.out.println("CORRECT LETTER: " + tL);
-        }
-
-        System.out.println(guess);
+    private static String getColor(char letter, int index) {
+        if (letter == targetWord.charAt(index)) return Colors.GREEN.getColor();
+        if (targetWord.contains(String.valueOf(letter))) return Colors.YELLOW.getColor();
+        return Colors.WHITE.getColor();
     }
 
     private static void printStructure() {
-        String outputString = "";
+        String output = "\n" + "tries " + guessedWords.size() + "/" + GAME_LENGTH + "\n\n";
 
-        for (int i = 0; i < GAME_LENGTH; i ++) {
-            String addedString = "";
-            if (i < guessedWords.size()) {
-                // addedString = guessedWords.get(i);
+        for (int i = 0; i < GAME_LENGTH; i++) {
+            if (guessedWords.size()-1 < i) {
+                output = output + Colors.WHITE.getColor() + "_ _ _ _ _" + Colors.RESET.getColor() + "\n";
             } else {
-                addedString = "_____";
+                String word = guessedWords.get(i);
+                for (int j = 0; j < word.length(); j++) {
+                    char letter = word.charAt(j);
+                    output = output + getColor(letter, j) + letter + Colors.RESET.getColor() + " ";
+                }
+                output = output + "\n";
             }
-            outputString = outputString + "\n" + addedString;
         }
 
-        System.out.println(outputString);
+        output += "\n";
+
+        for (int i = 0; i < keyboardLetters.length(); i++) {
+            output = output + Colors.WHITE.getColor() + keyboardLetters.charAt(i) + Colors.RESET.getColor() + " ";
+        }
+
+        System.out.println(output);
     }
 }
