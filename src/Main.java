@@ -1,6 +1,5 @@
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,10 +23,11 @@ public class Main {
     private static String currentGuess = "";
     private static String keyboardLetters = "QWERTYUIOP\nASDFGHJKL\nZXCVBNM";
     private static String targetWord;
+    private static int points;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
 
-        //new JWordleGUI(targetWord);
+        new JWordleGUI(GAME_LENGTH, WORD_LENGTH, points);
 
         //load in the two word lists
         try{
@@ -48,9 +48,12 @@ public class Main {
             e.printStackTrace();
         }
 
+
+        /*
         while (true) {
             startGame();
         }
+         */
     }
 
     //use this method for selecting a word. It's important for marking that the word you have selected is printed out to the console!
