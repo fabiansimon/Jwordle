@@ -13,21 +13,20 @@ public class Main {
     public static ArrayList<String> targetWords = new ArrayList<>();
 
     // guess Words
-    private static ArrayList<String> guessedWords = new ArrayList<>();
+    public static ArrayList<String> guessedWords = new ArrayList<>();
 
     // Game data
-    private static int GAME_LENGTH = 5;
-    private static int WORD_LENGTH = 5;
-    private static boolean gameOver = false;
-    private static boolean didWin = false;
+    public static int GAME_LENGTH = 5;
+    public static int WORD_LENGTH = 5;
+    public static int points;
+    public static String targetWord;
+    public static boolean gameOver = false;
+    public static boolean didWin = false;
+
     private static String currentGuess = "";
     private static String keyboardLetters = "QWERTYUIOP\nASDFGHJKL\nZXCVBNM";
-    private static String targetWord;
-    private static int points;
 
-    public static void main(String[] args) throws InterruptedException {
-
-        new JWordleGUI(GAME_LENGTH, WORD_LENGTH, points);
+    public static void main(String[] args) {
 
         //load in the two word lists
         try{
@@ -48,6 +47,8 @@ public class Main {
             e.printStackTrace();
         }
 
+        new JWordleGUI();
+        startGame();
 
         /*
         while (true) {
@@ -75,7 +76,7 @@ public class Main {
 
             while (!isValid) {
                 inputWord();
-                isValid = getIsValid();
+                isValid = getIsValid(currentGuess);
             }
 
             addGuess(currentGuess);
@@ -102,13 +103,13 @@ public class Main {
         guessedWords = new ArrayList<>();
     }
 
-    private static boolean getIsValid() {
+    public static boolean getIsValid(String guess) {
         Pattern p = Pattern.compile("[^a-z]", Pattern.CASE_INSENSITIVE);
-        Matcher m = p.matcher(currentGuess);
+        Matcher m = p.matcher(guess);
         boolean reg = m.find();
-        boolean dic = dictionary.contains(currentGuess.toLowerCase(Locale.ROOT));
+        boolean dic = dictionary.contains(guess.toLowerCase(Locale.ROOT));
 
-        if (currentGuess.length() == WORD_LENGTH && !reg && dic) return true;
+        if (guess.length() == WORD_LENGTH && !reg && dic) return true;
 
         System.out.println("Please enter a valid guess");
         return false;
@@ -120,7 +121,7 @@ public class Main {
         currentGuess = inputScanner.nextLine().toUpperCase(Locale.ROOT).trim();
     }
 
-    private static void checkGameStatus(String guess) {
+    public static void checkGameStatus(String guess) {
         if (targetWord.equals(guess)) {
             gameOver = true;
             didWin = true;
@@ -134,15 +135,15 @@ public class Main {
         }
     }
 
-    private static void addGuess(String guessInput) {
+    public static void addGuess(String guessInput) {
         String guess = guessInput;
         guessedWords.add(guess);
     }
 
-    private static String getColor(char letter, int index) {
-        if (letter == targetWord.charAt(index)) return Colors.GREEN.getColor();
-        if (targetWord.contains(String.valueOf(letter))) return Colors.YELLOW.getColor();
-        return Colors.WHITE.getColor();
+    public static Colors getColor(Character letter, int index) {
+        if (letter == targetWord.charAt(index)) return Colors.GREEN;
+        if (targetWord.contains(String.valueOf(letter))) return Colors.YELLOW;
+        return Colors.GRAY;
     }
 
     private static void printStructure() {
@@ -150,12 +151,12 @@ public class Main {
 
         for (int i = 0; i < GAME_LENGTH; i++) {
             if (guessedWords.size()-1 < i) {
-                output = output + Colors.WHITE.getColor() + "_ _ _ _ _" + Colors.RESET.getColor() + "\n";
+                output = output + Colors.WHITE.getString() + "_ _ _ _ _" + Colors.RESET.getString() + "\n";
             } else {
                 String word = guessedWords.get(i);
                 for (int j = 0; j < word.length(); j++) {
                     char letter = word.charAt(j);
-                    output = output + getColor(letter, j) + letter + Colors.RESET.getColor() + " ";
+                    output = output + getColor(letter, j).getString() + letter + Colors.RESET.getString() + " ";
                 }
                 output = output + "\n";
             }
@@ -164,7 +165,7 @@ public class Main {
         output += "\n";
 
         for (int i = 0; i < keyboardLetters.length(); i++) {
-            output = output + Colors.WHITE.getColor() + keyboardLetters.charAt(i) + Colors.RESET.getColor() + " ";
+            output = output + Colors.WHITE.getString() + keyboardLetters.charAt(i) + Colors.RESET.getString() + " ";
         }
 
         System.out.println(output);
