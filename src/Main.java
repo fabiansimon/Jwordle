@@ -15,6 +15,9 @@ public class Main {
     // guess Words
     public static ArrayList<String> guessedWords = new ArrayList<>();
 
+    // guessed Letter
+    public static Map<Character, Character> guessedLetters = new HashMap<>();
+
     // Game data
     public static int GAME_LENGTH = 5;
     public static int WORD_LENGTH = 5;
@@ -138,11 +141,25 @@ public class Main {
     public static void addGuess(String guessInput) {
         String guess = guessInput;
         guessedWords.add(guess);
+
+        // g == wrongly guessed || c == correct || p == wrong position
+
+        for (int i = 0; i < guessInput.length(); i++) {
+            Character c = guessInput.charAt(i);
+            int rank = getRank(c, i);
+            guessedLetters.put(c, rank == 1 ? 'c' : rank == 2 ? 'p' : 'g');
+        }
     }
 
-    public static Colors getColor(Character letter, int index) {
-        if (letter == targetWord.charAt(index)) return Colors.GREEN;
-        if (targetWord.contains(String.valueOf(letter))) return Colors.YELLOW;
+    public static int getRank(Character letter, int index) {
+        if (letter == targetWord.charAt(index)) return 1;
+        if (targetWord.contains(String.valueOf(letter))) return 2;
+        return 0;
+    }
+
+    public static Colors getColor(int rank) {
+        if (rank == 1) return Colors.GREEN;
+        if (rank == 2) return Colors.YELLOW;
         return Colors.GRAY;
     }
 
@@ -156,7 +173,7 @@ public class Main {
                 String word = guessedWords.get(i);
                 for (int j = 0; j < word.length(); j++) {
                     char letter = word.charAt(j);
-                    output = output + getColor(letter, j).getString() + letter + Colors.RESET.getString() + " ";
+                    output = output + getColor(getRank(letter, j)).getString() + letter + Colors.RESET.getString() + " ";
                 }
                 output = output + "\n";
             }

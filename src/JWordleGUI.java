@@ -19,14 +19,17 @@ public class JWordleGUI extends JFrame implements ActionListener, KeyListener {
     private int ROUND_SECONDS = 1;
     private int timeLeft = ROUND_SECONDS;
     private static String keyboardLetters = "QWERTYUIOPASDFGHJKLZXCVBNM";
+    private int borderRadius = 20;
 
     JWordleGUI() {
 
+        Dimension dimension = new Dimension(1400, 1050);
+
         JFrame frame = new JFrame();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.getContentPane().setBackground(Colors.GRAY.getColor());
-        frame.setSize(1000, 800);
-        frame.setMinimumSize(new Dimension(1100, 800));
+        frame.getContentPane().setBackground(Colors.BLACK.getColor());
+        frame.setSize(dimension);
+        frame.setMinimumSize(dimension);
         frame.setLayout(new BorderLayout(10,10));
 
         JPanel leftPanel = new JPanel();
@@ -83,15 +86,19 @@ public class JWordleGUI extends JFrame implements ActionListener, KeyListener {
     private JPanel playingFieldPanel() {
         JPanel playingPanel = new JPanel();
         playingPanel.setBackground(Colors.DARKBLACK.getColor());
-        playingPanel.setLayout(new GridLayout(0, Main.GAME_LENGTH));
-        playingPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        playingPanel.setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
+
+        RoundedPanel container = new RoundedPanel(40, Colors.DARKBLACK.getColor());
+        container.setLayout(new GridLayout(0, Main.GAME_LENGTH, 55, 35));
 
         letterPanels = new JPanel[Main.WORD_LENGTH*Main.GAME_LENGTH];
 
         for (int i = 0; i < letterPanels.length; i++) {
             letterPanels[i] = getLetterBox("", Colors.BLACK.getColor());
-            playingPanel.add(letterPanels[i]);
+            container.add(letterPanels[i]);
         }
+
+        playingPanel.add(container, BorderLayout.CENTER);
         return playingPanel;
     }
 
@@ -99,21 +106,27 @@ public class JWordleGUI extends JFrame implements ActionListener, KeyListener {
         JPanel keyBoardView = new JPanel();
         keyBoardView.setBackground(Colors.BLACK.getColor());
         keyBoardView.setPreferredSize(new Dimension(100, 300));
-        keyBoardView.setLayout(new GridLayout(0, 10));
-        keyBoardView.setBorder(BorderFactory.createEmptyBorder(10, 150, 10, 150));
+
+        JPanel container = new JPanel();
+        container.setBackground(Colors.BLACK.getColor());
+
+        container.setLayout(new GridLayout(0, 10, 10, 10));
+        container.setBorder(BorderFactory.createEmptyBorder(10, 150, 10, 150));
 
         keyboardLetterPanels = new JPanel[keyboardLetters.length()];
 
         // add letterPanels
         for (int i = 0; i < keyboardLetters.length(); i++) {
             keyboardLetterPanels[i] = getLetterBox(String.valueOf(keyboardLetters.charAt(i)), Colors.WHITE.getColor());
-            keyBoardView.add(keyboardLetterPanels[i]);
+            container.add(keyboardLetterPanels[i]);
         }
 
         // add textField
         inputField = new JTextField();
         inputField.addActionListener(this);
-        keyBoardView.add(inputField);
+        container.add(inputField);
+
+        keyBoardView.add(container);
 
         return keyBoardView;
     }
@@ -138,8 +151,9 @@ public class JWordleGUI extends JFrame implements ActionListener, KeyListener {
     }
 
     private JPanel getLetterBox(String c, Color color) {
-        JPanel letterBox = new RoundedPanel(15, color);
+        JPanel letterBox = new RoundedPanel(borderRadius, color);
         letterBox.setLayout(new BorderLayout());
+        letterBox.setPreferredSize(new Dimension(80,80));
 
         JLabel label = new JLabel(String.valueOf(c));
         label.setFont(new Font("SF Pro Rounded", Font.BOLD, 40));
@@ -197,8 +211,26 @@ public class JWordleGUI extends JFrame implements ActionListener, KeyListener {
             JLabel cLabel = (JLabel)cPanel.getComponent(0);
             Character letter = cWord.charAt(i);
 
-            cPanel.setBackground(Main.getColor(letter, i).getColor());
+            cPanel.setBackground(Main.getColor(Main.getRank(letter, i)).getColor());
             cLabel.setText(String.valueOf(letter));
+        }
+
+        keyboardLetterPanels[2].setBackground(Colors.RED.getColor());
+
+        for (int i = 0; i < keyboardLetterPanels.length; i++) {
+            JPanel cPanel = keyboardLetterPanels[i];
+            JLabel cLabel = (JLabel)cPanel.getComponent(0);
+            Character c = cLabel.getText().charAt(0);
+
+            if (Main.guessedLetters.containsKey(c)) {
+                Character v = Main.guessedLetters.get(c);
+                if (v.equals('c')) cPanel.setBackground(Colors.GREEN.getColor());
+                if (v.equals('p')) cPanel.setBackground(Colors.YELLOW.getColor());
+                if (v.equals('g')) cPanel.setBackground(Colors.GRAY.getColor());
+
+                cPanel.repaint();
+            }
+
         }
 
     }
