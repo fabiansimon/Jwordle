@@ -1,29 +1,32 @@
 import javax.swing.*;
-import javax.swing.border.Border;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.DocumentFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.util.ArrayList;
 import java.util.Locale;
 
-public class JWordleGUI extends JFrame implements ActionListener, KeyListener {
+public class JWordleGUI extends JFrame implements ActionListener {
 
-    JLabel score;
-    JLabel timeLabel;
+    JLabel scoreLabel;
+    JLabel guessLabel;
     JProgressBar timeBar;
     JTextField inputField;
     JPanel[] keyboardLetterPanels;
     JPanel[] letterPanels;
 
-    private int ROUND_SECONDS = 1;
+    private int ROUND_SECONDS = 60;
     private int timeLeft = ROUND_SECONDS;
     private static String keyboardLetters = "QWERTYUIOPASDFGHJKLZXCVBNM";
     private int borderRadius = 20;
+    private int scoreAmt;
+    private Font letterFont = new Font("SF Pro Rounded", Font.BOLD, 40);
 
     JWordleGUI() {
-
-        Dimension dimension = new Dimension(1400, 1050);
+        Dimension dimension = new Dimension(1400, 1110);
 
         JFrame frame = new JFrame();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -44,7 +47,7 @@ public class JWordleGUI extends JFrame implements ActionListener, KeyListener {
 
         frame.setVisible(true);
 
-        //startTimer();
+        startTimer();
     }
 
     private JPanel topNavPanel(){
@@ -54,12 +57,12 @@ public class JWordleGUI extends JFrame implements ActionListener, KeyListener {
         topPanel.setPreferredSize(new Dimension(100, 60));
 
         // Guess Label
-        JLabel guessLabel = new JLabel("0/" + Main.GAME_LENGTH);
+        guessLabel = new JLabel("0/" + Main.GAME_LENGTH);
         guessLabel.setForeground(Color.white);
 
         // Score Label
-        score = new JLabel( Main.points + " pts");
-        score.setForeground(Color.white);
+        scoreLabel = new JLabel( Main.points + " pts");
+        scoreLabel.setForeground(Color.white);
 
         // Buttons
         JButton closeButton = new JButton("close");
@@ -77,7 +80,7 @@ public class JWordleGUI extends JFrame implements ActionListener, KeyListener {
         topPanel.add(enterButton);
         topPanel.add(closeButton);
         topPanel.add(guessLabel);
-        topPanel.add(score);
+        topPanel.add(scoreLabel);
         topPanel.add(restartButton);
 
         return topPanel;
@@ -105,28 +108,41 @@ public class JWordleGUI extends JFrame implements ActionListener, KeyListener {
     private JPanel keyboardPanel() {
         JPanel keyBoardView = new JPanel();
         keyBoardView.setBackground(Colors.BLACK.getColor());
-        keyBoardView.setPreferredSize(new Dimension(100, 300));
+        keyBoardView.setPreferredSize(new Dimension(100, 370));
 
-        JPanel container = new JPanel();
-        container.setBackground(Colors.BLACK.getColor());
+        JPanel inputPanel = new JPanel();
+        inputPanel.setBackground(Colors.BLACK.getColor());
+        inputPanel.setPreferredSize(new Dimension(0, 90));
 
-        container.setLayout(new GridLayout(0, 10, 10, 10));
-        container.setBorder(BorderFactory.createEmptyBorder(10, 150, 10, 150));
+        // add textField
+        inputField = new JTextField();
+        inputField.addActionListener(this);
+        inputField.setPreferredSize(new Dimension(500, 70));
+        inputField.setHorizontalAlignment(SwingConstants.CENTER);
+        inputField.setFont(letterFont);
+        inputField.addKeyListener(keyListener);
+        DocumentFilter filter = new UppercaseDocumentFilter();
+        ((AbstractDocument) inputField.getDocument()).setDocumentFilter(filter);
+
+        inputPanel.add(inputField);
+
+        JPanel keyboardContainer = new JPanel();
+        keyboardContainer.setBackground(Colors.BLACK.getColor());
+
+        keyboardContainer.setLayout(new GridLayout(0, 10, 10, 10));
+        keyboardContainer.setBorder(BorderFactory.createEmptyBorder(10, 150, 10, 150));
 
         keyboardLetterPanels = new JPanel[keyboardLetters.length()];
 
         // add letterPanels
         for (int i = 0; i < keyboardLetters.length(); i++) {
             keyboardLetterPanels[i] = getLetterBox(String.valueOf(keyboardLetters.charAt(i)), Colors.WHITE.getColor());
-            container.add(keyboardLetterPanels[i]);
+            keyboardContainer.add(keyboardLetterPanels[i]);
         }
 
-        // add textField
-        inputField = new JTextField();
-        inputField.addActionListener(this);
-        container.add(inputField);
-
-        keyBoardView.add(container);
+        keyBoardView.setLayout(new BorderLayout());
+        keyBoardView.add(inputPanel, BorderLayout.NORTH);
+        keyBoardView.add(keyboardContainer, BorderLayout.SOUTH);
 
         return keyBoardView;
     }
@@ -135,16 +151,16 @@ public class JWordleGUI extends JFrame implements ActionListener, KeyListener {
         JPanel timerView = new JPanel();
         timerView.setBackground(Colors.BLACK.getColor());;
         timerView.setPreferredSize(new Dimension(300, 300));
-
-        timeLabel = new JLabel();
-        timeLabel.setText(String.valueOf(timeLeft));
+        UIManager.put("ProgressBar.selectionForeground", Color.WHITE);  //colour of
 
         timeBar = new JProgressBar();
         timeBar.setValue(ROUND_SECONDS);
         timeBar.setMaximum(ROUND_SECONDS);
+        timeBar.setPreferredSize(new Dimension(50, 500));
+        timeBar.setStringPainted(true);
+        timeBar.setString(String.valueOf(timeLeft));
         timeBar.setOrientation(SwingConstants.VERTICAL);
 
-        timerView.add(timeLabel);
         timerView.add(timeBar);
 
         return timerView;
@@ -156,7 +172,7 @@ public class JWordleGUI extends JFrame implements ActionListener, KeyListener {
         letterBox.setPreferredSize(new Dimension(80,80));
 
         JLabel label = new JLabel(String.valueOf(c));
-        label.setFont(new Font("SF Pro Rounded", Font.BOLD, 40));
+        label.setFont(letterFont);
         label.setForeground(color == Colors.WHITE.getColor() ? Colors.BLACK.getColor() :  Colors.WHITE.getColor());
         label.setHorizontalAlignment(JLabel.CENTER);
         label.setVerticalAlignment(JLabel.CENTER);
@@ -172,37 +188,49 @@ public class JWordleGUI extends JFrame implements ActionListener, KeyListener {
         }
 
         if (e.getActionCommand() == "enterGuess") {
-            final String targetWord = Main.targetWord;
-            String inputWord = inputField.getText().trim().toUpperCase(Locale.ROOT);
-
-            if (Main.getIsValid(inputWord)) {
-                Main.addGuess(inputWord);
-                updateTiles();
-                inputField.setText("");
-                Main.checkGameStatus(inputWord);
-            } else {
-                JOptionPane.showMessageDialog(null, "Please only use 5 characters");
-            }
-
-            if (targetWord.equals(inputWord)) {
-                JOptionPane.showMessageDialog(null, "Congrats, you've guessed it correctly");
-
-            }
-
+            enterGuess();
         }
 
         if (e.getActionCommand() == "restartGame") {
-            if (timeLeft == -1) {
-                startTimer();
-        }
-
-            timeLeft = ROUND_SECONDS;
-            timeBar.setValue(ROUND_SECONDS);
-            timeLabel.setText(String.valueOf(ROUND_SECONDS));
+            Main.resetGame();
+            resetUI();
         }
     }
 
-    private void updateTiles() {
+
+    private void enterGuess() {
+        String targetWord = Main.targetWord;
+        String inputWord = inputField.getText().trim().toUpperCase(Locale.ROOT);
+
+        if (Main.getIsValid(inputWord)) {
+            nextRound(inputWord);
+        } else {
+            JOptionPane.showMessageDialog(null, "Please only use 5 characters");
+        }
+    }
+
+    private void updateUI() {
+
+        // when game gets restarted
+        if (Main.guessedWords.size() == 0) {
+
+            for(int i = 0; i < letterPanels.length; i++) {
+                JPanel cPanel = letterPanels[i];
+                JLabel cLabel = (JLabel)cPanel.getComponent(0);
+                cPanel.setBackground(Colors.BLACK.getColor());
+                cLabel.setText("");
+            }
+
+            for (int i = 0; i < keyboardLetterPanels.length; i++) {
+                JPanel cPanel = keyboardLetterPanels[i];
+                cPanel.setBackground(Colors.WHITE.getColor());
+
+                cPanel.repaint();
+            }
+            return;
+        }
+
+        // when game continues
         int round = Main.guessedWords.size()-1;
         String cWord = Main.guessedWords.get(round);
 
@@ -215,8 +243,7 @@ public class JWordleGUI extends JFrame implements ActionListener, KeyListener {
             cLabel.setText(String.valueOf(letter));
         }
 
-        keyboardLetterPanels[2].setBackground(Colors.RED.getColor());
-
+        // change keyboardPanel letters to correct color
         for (int i = 0; i < keyboardLetterPanels.length; i++) {
             JPanel cPanel = keyboardLetterPanels[i];
             JLabel cLabel = (JLabel)cPanel.getComponent(0);
@@ -230,9 +257,55 @@ public class JWordleGUI extends JFrame implements ActionListener, KeyListener {
 
                 cPanel.repaint();
             }
-
         }
 
+        // reset inputField
+        inputField.setText("");
+
+    }
+
+    private void resultModal(boolean isWon) {
+        String[] buttons = isWon ? new String[]{"Quit game", "Sure", "Share your result"} : new String[]{"Quit game", "Try again"};
+        String title = isWon ? "Congrats!" : "Oops";
+        String message = isWon ? "You've guessed it correctly in " + Main.guessedWords.size() + " tries!\n Want to play again?" : "That happens to the best of us. Want to try again?";
+        int res = JOptionPane.showOptionDialog(null, message, title,
+                JOptionPane.WARNING_MESSAGE, 0, null, buttons, buttons[isWon ? 2 : 1]);
+
+        if (res == 0) System.exit(0);
+        if (res == 1) {
+            Main.resetGame();
+            resetUI();
+        }
+        if (res == 2) {
+            // share result
+        }
+    }
+
+    private void resetUI() {
+        inputField.setText("");
+        guessLabel.setText(Main.guessedWords.size() + "/" + Main.GAME_LENGTH);
+        scoreLabel.setText(String.valueOf(0));
+        timeLeft = ROUND_SECONDS;
+        updateUI();
+    }
+
+    private void nextRound(String inputWord) {
+        Main.addGuess(inputWord);
+        Main.checkGameStatus(inputWord);
+        updateUI();
+
+        boolean didWin = Main.targetWord.equals(inputWord);
+
+        if (Main.guessedWords.size() == Main.GAME_LENGTH || didWin) {
+            resultModal(didWin ? true : false);
+            return;
+        }
+        timeLeft = ROUND_SECONDS;
+    }
+
+    private int getScore() {
+        scoreAmt = scoreAmt + 150;
+        return scoreAmt;
     }
 
     private void startTimer() {
@@ -240,7 +313,7 @@ public class JWordleGUI extends JFrame implements ActionListener, KeyListener {
 
         while (timeLeft >= 0) {
             timeBar.setValue(timeLeft);
-            timeLabel.setText(String.valueOf(timeLeft));
+            timeBar.setString(String.valueOf(timeLeft));
 
             try {
                 Thread.sleep(1000);
@@ -248,21 +321,24 @@ public class JWordleGUI extends JFrame implements ActionListener, KeyListener {
                 e.printStackTrace();
             }
             timeLeft -= 1;
+            if (timeLeft == 0) {
+                resultModal(false);
+            }
         }
     }
 
-    @Override
-    public void keyTyped(KeyEvent e) {
-        System.out.println("1");
-    }
+    KeyListener keyListener = new KeyListener() {
+        public void keyPressed(KeyEvent keyEvent) {
+            if (keyEvent.getKeyCode() == 10) {
+                enterGuess();
+            }
+        }
 
-    @Override
-    public void keyPressed(KeyEvent e) {
-        System.out.println("2");
-    }
+        public void keyReleased(KeyEvent keyEvent) {
+        }
 
-    @Override
-    public void keyReleased(KeyEvent e) {
-        System.out.println("3");
-    }
+        public void keyTyped(KeyEvent keyEvent) {
+        }
+
+    };
 }

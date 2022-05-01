@@ -50,8 +50,8 @@ public class Main {
             e.printStackTrace();
         }
 
+        targetWord = getTarget().toUpperCase();
         new JWordleGUI();
-        startGame();
 
         /*
         while (true) {
@@ -69,9 +69,13 @@ public class Main {
         return target;
     }
 
-    private static void startGame() {
+    public static void startGame() {
+
+        /*
         Scanner inputScanner =  new Scanner(System.in);
         targetWord = getTarget().toUpperCase(Locale.ROOT);
+
+        new JWordleGUI();
 
         while (guessedWords.size() < GAME_LENGTH && !gameOver) {
 
@@ -83,7 +87,7 @@ public class Main {
             }
 
             addGuess(currentGuess);
-            printStructure();
+            //printStructure();
             checkGameStatus(currentGuess);
         }
 
@@ -97,13 +101,16 @@ public class Main {
             resetGame();
         } else {
             System.exit(0);
-        }
+        }         */
+
     }
 
-    private static void resetGame() {
+    public static void resetGame() {
         gameOver = false;
         didWin = false;
+        targetWord = getTarget().toUpperCase();
         guessedWords = new ArrayList<>();
+        guessedLetters = new HashMap<>() ;
     }
 
     public static boolean getIsValid(String guess) {
