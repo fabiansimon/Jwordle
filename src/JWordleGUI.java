@@ -239,7 +239,7 @@ public class JWordleGUI extends JFrame implements ActionListener {
             JLabel cLabel = (JLabel)cPanel.getComponent(0);
             Character letter = cWord.charAt(i);
 
-            cPanel.setBackground(Main.getColor(Main.getRank(letter, i)).getColor());
+            cPanel.setBackground(Main.getColor(Main.getRank(cWord, i)).getColor());
             cLabel.setText(String.valueOf(letter));
         }
 
@@ -291,7 +291,6 @@ public class JWordleGUI extends JFrame implements ActionListener {
 
     private void nextRound(String inputWord) {
         Main.addGuess(inputWord);
-        Main.checkGameStatus(inputWord);
         updateUI();
 
         boolean didWin = Main.targetWord.equals(inputWord);

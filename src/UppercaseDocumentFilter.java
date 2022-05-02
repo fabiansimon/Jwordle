@@ -5,7 +5,6 @@ import javax.swing.text.DocumentFilter;
 public class UppercaseDocumentFilter extends DocumentFilter {
     public void insertString(DocumentFilter.FilterBypass filterBypass, int offset, String text, AttributeSet attributeSet) throws BadLocationException {
         filterBypass.insertString(offset, text.toUpperCase(), attributeSet);
-        System.out.println("111");
     }
 
     public void replace(DocumentFilter.FilterBypass filterBypass, int offset, int length, String text, AttributeSet attributeSet) throws BadLocationException {
