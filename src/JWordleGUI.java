@@ -2,10 +2,13 @@ import javax.swing.*;
 import javax.swing.text.AbstractDocument;
 import javax.swing.text.DocumentFilter;
 import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.image.ImageProducer;
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -22,11 +25,13 @@ public class JWordleGUI extends JFrame implements ActionListener {
     private int timeLeft = ROUND_SECONDS;
     private static String keyboardLetters = "QWERTYUIOPASDFGHJKLZXCVBNM";
     private int borderRadius = 20;
-    private int scoreAmt;
     private Font letterFont = new Font("SF Pro Rounded", Font.BOLD, 40);
+    private Font labelFont = new Font("SF Pro Rounded", Font.BOLD, 20);
 
     JWordleGUI() {
-        Dimension dimension = new Dimension(1400, 1110);
+        Dimension dimension = new Dimension(1400, 1150);
+
+        ImageIcon logo = new ImageIcon("jwordle.jpg");
 
         JFrame frame = new JFrame();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -34,6 +39,7 @@ public class JWordleGUI extends JFrame implements ActionListener {
         frame.setSize(dimension);
         frame.setMinimumSize(dimension);
         frame.setLayout(new BorderLayout(10,10));
+        frame.setIconImage(logo.getImage());
 
         JPanel leftPanel = new JPanel();
         leftPanel.setBackground(Colors.BLACK.getColor());
@@ -57,11 +63,13 @@ public class JWordleGUI extends JFrame implements ActionListener {
         topPanel.setPreferredSize(new Dimension(100, 60));
 
         // Guess Label
-        guessLabel = new JLabel("0/" + Main.GAME_LENGTH);
+        guessLabel = new JLabel("0/" + GameLogic.GAME_LENGTH);
+        guessLabel.setFont(labelFont);
         guessLabel.setForeground(Color.white);
 
         // Score Label
-        scoreLabel = new JLabel( Main.points + " pts");
+        scoreLabel = new JLabel( GameLogic.points + " pts");
+        scoreLabel.setFont(labelFont);
         scoreLabel.setForeground(Color.white);
 
         // Buttons
@@ -89,12 +97,12 @@ public class JWordleGUI extends JFrame implements ActionListener {
     private JPanel playingFieldPanel() {
         JPanel playingPanel = new JPanel();
         playingPanel.setBackground(Colors.DARKBLACK.getColor());
-        playingPanel.setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
+        playingPanel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
 
         RoundedPanel container = new RoundedPanel(40, Colors.DARKBLACK.getColor());
-        container.setLayout(new GridLayout(0, Main.GAME_LENGTH, 55, 35));
+        container.setLayout(new GridLayout(0, GameLogic.WORD_LENGTH, 50, 30));
 
-        letterPanels = new JPanel[Main.WORD_LENGTH*Main.GAME_LENGTH];
+        letterPanels = new JPanel[GameLogic.WORD_LENGTH*GameLogic.GAME_LENGTH];
 
         for (int i = 0; i < letterPanels.length; i++) {
             letterPanels[i] = getLetterBox("", Colors.BLACK.getColor());
@@ -169,7 +177,7 @@ public class JWordleGUI extends JFrame implements ActionListener {
     private JPanel getLetterBox(String c, Color color) {
         JPanel letterBox = new RoundedPanel(borderRadius, color);
         letterBox.setLayout(new BorderLayout());
-        letterBox.setPreferredSize(new Dimension(80,80));
+        letterBox.setPreferredSize(new Dimension(75,75));
 
         JLabel label = new JLabel(String.valueOf(c));
         label.setFont(letterFont);
@@ -192,27 +200,28 @@ public class JWordleGUI extends JFrame implements ActionListener {
         }
 
         if (e.getActionCommand() == "restartGame") {
-            Main.resetGame();
+            GameLogic.resetGame();
             resetUI();
         }
     }
 
 
     private void enterGuess() {
-        String targetWord = Main.targetWord;
         String inputWord = inputField.getText().trim().toUpperCase(Locale.ROOT);
+        int validity = GameLogic.getIsValid(inputWord);
 
-        if (Main.getIsValid(inputWord)) {
+        if (validity == -1) {
             nextRound(inputWord);
         } else {
-            JOptionPane.showMessageDialog(null, "Please only use 5 characters");
+            String[] messages = { "Sorry you're not allowed to enter special characters", "Sorry the word must be " + GameLogic.WORD_LENGTH + " characters long", "Sorry this word is not in the dictionary - make sure you spelled it correctly", "Sorry something went wrong please try again" };
+            JOptionPane.showMessageDialog(null, messages[validity]);
         }
     }
 
     private void updateUI() {
 
         // when game gets restarted
-        if (Main.guessedWords.size() == 0) {
+        if (GameLogic.guessedWords.size() == 0) {
 
             for(int i = 0; i < letterPanels.length; i++) {
                 JPanel cPanel = letterPanels[i];
@@ -231,15 +240,15 @@ public class JWordleGUI extends JFrame implements ActionListener {
         }
 
         // when game continues
-        int round = Main.guessedWords.size()-1;
-        String cWord = Main.guessedWords.get(round);
+        int round = GameLogic.guessedWords.size()-1;
+        String cWord = GameLogic.guessedWords.get(round);
 
-        for (int i = 0; i < Main.WORD_LENGTH; i++) {
-            JPanel cPanel = letterPanels[i+(round*Main.WORD_LENGTH)];
+        for (int i = 0; i < GameLogic.WORD_LENGTH; i++) {
+            JPanel cPanel = letterPanels[i+(round*GameLogic.WORD_LENGTH)];
             JLabel cLabel = (JLabel)cPanel.getComponent(0);
             Character letter = cWord.charAt(i);
 
-            cPanel.setBackground(Main.getColor(Main.getRank(cWord, i)).getColor());
+            cPanel.setBackground(GameLogic.getColor(GameLogic.getRank(cWord, i)).getColor());
             cLabel.setText(String.valueOf(letter));
         }
 
@@ -249,8 +258,8 @@ public class JWordleGUI extends JFrame implements ActionListener {
             JLabel cLabel = (JLabel)cPanel.getComponent(0);
             Character c = cLabel.getText().charAt(0);
 
-            if (Main.guessedLetters.containsKey(c)) {
-                Character v = Main.guessedLetters.get(c);
+            if (GameLogic.guessedLetters.containsKey(c)) {
+                Character v = GameLogic.guessedLetters.get(c);
                 if (v.equals('c')) cPanel.setBackground(Colors.GREEN.getColor());
                 if (v.equals('p')) cPanel.setBackground(Colors.YELLOW.getColor());
                 if (v.equals('g')) cPanel.setBackground(Colors.GRAY.getColor());
@@ -262,49 +271,67 @@ public class JWordleGUI extends JFrame implements ActionListener {
         // reset inputField
         inputField.setText("");
 
+        // increase guessField
+        guessLabel.setText(round + 1 + "/" + GameLogic.GAME_LENGTH);
+
+        // increase pointField
+        scoreLabel.setText(getScore() + " points");
+
     }
 
     private void resultModal(boolean isWon) {
-        String[] buttons = isWon ? new String[]{"Quit game", "Sure", "Share your result"} : new String[]{"Quit game", "Try again"};
+        String[] buttons = isWon ? new String[]{"Quit game", "Just Play again", "Copy result to share & Play again"} : new String[]{"Quit game", "Try again"};
         String title = isWon ? "Congrats!" : "Oops";
-        String message = isWon ? "You've guessed it correctly in " + Main.guessedWords.size() + " tries!\n Want to play again?" : "That happens to the best of us. Want to try again?";
+        String message = isWon ? "Total time: " + GameLogic.timeTotal + " seconds\n" + "You've guessed it correctly in " + GameLogic.guessedWords.size() + " tries!\n Want to play again?" : "That happens to the best of us. The correct word was \n " + GameLogic.targetWord + "\n" +  " Want to try again?";
         int res = JOptionPane.showOptionDialog(null, message, title,
-                JOptionPane.WARNING_MESSAGE, 0, null, buttons, buttons[isWon ? 2 : 1]);
+                JOptionPane.WARNING_MESSAGE, isWon ? 1 : 0, null, buttons, buttons[isWon ? 2 : 1]);
 
         if (res == 0) System.exit(0);
         if (res == 1) {
-            Main.resetGame();
+            GameLogic.resetGame();
             resetUI();
         }
         if (res == 2) {
             // share result
+            String myString = GameLogic.getResultString();
+            StringSelection stringSelection = new StringSelection(myString);
+            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            clipboard.setContents(stringSelection, null);
+
+            GameLogic.resetGame();
+            resetUI();
         }
     }
 
     private void resetUI() {
         inputField.setText("");
-        guessLabel.setText(Main.guessedWords.size() + "/" + Main.GAME_LENGTH);
-        scoreLabel.setText(String.valueOf(0));
+        guessLabel.setText(GameLogic.guessedWords.size() + "/" + GameLogic.GAME_LENGTH);
+        scoreLabel.setText(0 + " points");
         timeLeft = ROUND_SECONDS;
         updateUI();
     }
 
     private void nextRound(String inputWord) {
-        Main.addGuess(inputWord);
+        GameLogic.addGuess(inputWord);
         updateUI();
+        GameLogic.timeTotal = GameLogic.timeTotal + (ROUND_SECONDS - timeLeft);
 
-        boolean didWin = Main.targetWord.equals(inputWord);
+        boolean didWin = GameLogic.targetWord.equals(inputWord);
 
-        if (Main.guessedWords.size() == Main.GAME_LENGTH || didWin) {
+        if (GameLogic.guessedWords.size() == GameLogic.GAME_LENGTH || didWin) {
             resultModal(didWin ? true : false);
             return;
         }
+
         timeLeft = ROUND_SECONDS;
     }
 
     private int getScore() {
-        scoreAmt = scoreAmt + 150;
-        return scoreAmt;
+        int score = GameLogic.points;
+        score = score + (timeLeft * 12);
+        GameLogic.points = score;
+
+        return score;
     }
 
     private void startTimer() {
